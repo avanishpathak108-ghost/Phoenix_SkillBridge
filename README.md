@@ -17,3 +17,22 @@ Phoenix
 - Python
 - Streamlit
 - Rule-based skill matching
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## To Start
+pip install -r requirements.txt
+streamlit run app.py
