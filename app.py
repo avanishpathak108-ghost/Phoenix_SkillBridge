@@ -1,18 +1,25 @@
 import streamlit as st
 from roles_skills import ROLES_SKILLS
 
-st.set_page_config(page_title="Phoenix", layout="centered")
+st.set_page_config(page_title="Skill Bridge", layout="centered")
 
 # -----------------------------
 # Helper Functions
 # -----------------------------
-def extract_skills(text, role_skills):
+def extract_skills_with_confidence(text, role_skills):
     text = text.lower()
-    extracted = []
+    skill_confidence = {}
+
     for skill in role_skills:
-        if skill in text:
-            extracted.append(skill)
-    return list(set(extracted))
+        count = text.count(skill)
+        if count >= 2:
+            skill_confidence[skill] = "Strong"
+        elif count == 1:
+            skill_confidence[skill] = "Basic"
+        else:
+            skill_confidence[skill] = "Missing"
+
+    return skill_confidence
 
 
 def calculate_readiness(present, total):
@@ -21,20 +28,16 @@ def calculate_readiness(present, total):
     return int((len(present) / total) * 100)
 
 
-def generate_basic_roadmap(missing_skills):
-    roadmap = []
-    week = 1
-    for skill in missing_skills:
-        roadmap.append(f"Week {week}–{week+1}: Learn {skill.title()}")
-        week += 2
-    return roadmap
+def estimate_time_to_ready(missing_skills):
+    weeks = len(missing_skills) * 2
+    return f"{weeks}–{weeks+2} weeks"
 
 
 # -----------------------------
-# UI Starts Here
+# UI
 # -----------------------------
-st.title("🔥 Phoenix")
-st.subheader("Skill Gap Translator for Industry Readiness")
+st.title("🔥 Skill Bridge")
+st.caption("Built by Team Phoenix | Skill Gap Translator for Industry Readiness")
 
 mode = st.radio(
     "Choose Mode",
@@ -61,40 +64,62 @@ if mode == "SkillBridge (Skill Gap Analysis)":
     if st.button("Analyze Skill Gap"):
 
         role_skills = ROLES_SKILLS[role]
-        user_skills = extract_skills(resume_text, role_skills)
 
-        missing_skills = [
-            skill for skill in role_skills if skill not in user_skills
+        skill_confidence = extract_skills_with_confidence(
+            resume_text, role_skills
+        )
+
+        present_skills = [
+            skill for skill, level in skill_confidence.items()
+            if level in ["Strong", "Basic"]
         ]
 
-        readiness = calculate_readiness(user_skills, len(role_skills))
+        missing_skills = [
+            skill for skill, level in skill_confidence.items()
+            if level == "Missing"
+        ]
 
-        st.subheader("✅ Present Skills")
-        if user_skills:
-            st.write([skill.title() for skill in user_skills])
-        else:
-            st.write("No matching skills detected.")
+        readiness = calculate_readiness(
+            present_skills, len(role_skills)
+        )
 
-        st.subheader("❌ Missing Skills")
-        if missing_skills:
-            st.write([skill.title() for skill in missing_skills])
-        else:
-            st.write("No missing skills 🎉")
+        # --- Skill Analysis ---
+        st.subheader("📌 Skill Analysis")
+        for skill, level in skill_confidence.items():
+            if level == "Strong":
+                st.success(f"{skill.title()} → Strong")
+            elif level == "Basic":
+                st.warning(f"{skill.title()} → Basic")
+            else:
+                st.error(f"{skill.title()} → Missing")
 
+        # --- Readiness ---
         st.subheader("📊 Readiness Level")
         st.write(f"You are **{readiness}% ready** for the role of **{role}**.")
 
-        st.subheader("🛣 Learning Roadmap")
-        roadmap = generate_basic_roadmap(missing_skills)
-
-        if roadmap:
-            for step in roadmap:
-                st.write(step)
+        # --- Job Ready Status ---
+        st.subheader("🎯 Job Readiness Status")
+        if readiness >= 70:
+            st.success("You are close to being job‑ready for this role.")
+        elif readiness >= 40:
+            st.warning("You are partially ready and need focused upskilling.")
         else:
-            st.write("You are job-ready for this role.")
+            st.error("You are not job‑ready yet. A strong foundation is required.")
+
+        # --- Time Estimate ---
+        st.subheader("⏳ Estimated Time to Role Readiness")
+        st.write(estimate_time_to_ready(missing_skills))
+
+        # --- Roadmap ---
+        st.subheader("🛣 Learning Roadmap (Priority‑Based)")
+        if missing_skills:
+            for i, skill in enumerate(missing_skills, start=1):
+                st.write(f"🔴 Priority {i}: Learn {skill.title()}")
+        else:
+            st.success("No roadmap needed — you are role‑ready 🎉")
 
 # -----------------------------
-# CAREER ROADMAP MODE (BASIC)
+# CAREER ROADMAP MODE
 # -----------------------------
 else:
     st.header("🧭 Career Roadmap")
@@ -109,19 +134,15 @@ else:
     if interest == "Data":
         st.write("- Data Analyst")
         st.write("- Business Analyst")
-
     elif interest == "Web Development":
         st.write("- Web Developer")
         st.write("- Frontend Engineer")
-
     elif interest == "Security":
         st.write("- Cybersecurity Analyst")
         st.write("- SOC Analyst")
-
     elif interest == "Design":
         st.write("- UI/UX Designer")
         st.write("- Product Designer")
-
     elif interest == "Cloud":
         st.write("- Cloud Engineer")
         st.write("- DevOps Engineer")
