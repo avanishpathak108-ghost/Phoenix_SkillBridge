@@ -76,6 +76,9 @@ if mode == "SkillBridge (Skill Gap Analysis)":
     with col2:
         if st.button("Use Sample Resume"):
             st.session_state.resume_text = SAMPLE_RESUME
+            st.rerun()
+
+
 
 
     if st.button("Analyze Skill Gap"):
