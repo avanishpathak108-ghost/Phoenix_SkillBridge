@@ -32,6 +32,11 @@ def estimate_time_to_ready(missing_skills):
     weeks = len(missing_skills) * 2
     return f"{weeks}–{weeks+2} weeks"
 
+SAMPLE_RESUME = """
+I have worked on Python and Excel for data analysis projects.
+Used Pandas for data cleaning and data visualization.
+Basic knowledge of HTML and CSS.
+"""
 
 # -----------------------------
 # UI
@@ -56,10 +61,22 @@ if mode == "SkillBridge (Skill Gap Analysis)":
         list(ROLES_SKILLS.keys())
     )
 
-    resume_text = st.text_area(
-        "Paste your resume text or skills here",
-        height=200
-    )
+    if "resume_text" not in st.session_state:
+        st.session_state.resume_text = ""
+    
+    col1, col2 = st.columns([3, 1])
+
+    with col1:
+        resume_text = st.text_area(
+            "Paste your resume text or skills here",
+            value=st.session_state.resume_text,
+            height=200
+        )
+
+    with col2:
+        if st.button("Use Sample Resume"):
+            st.session_state.resume_text = SAMPLE_RESUME
+
 
     if st.button("Analyze Skill Gap"):
 
