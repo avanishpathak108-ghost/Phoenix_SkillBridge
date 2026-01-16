@@ -1,7 +1,29 @@
 import streamlit as st
 from roles_skills import ROLES_SKILLS
+if "step" not in st.session_state:
+    st.session_state.step = 1
+
 
 st.set_page_config(page_title="Skill Bridge", layout="centered")
+
+st.sidebar.title("🔥 Phoenix")
+st.sidebar.subheader("Skill Bridge")
+
+st.sidebar.markdown(
+    """
+    **Skill Bridge** helps students identify  
+    industry skill gaps and get a  
+    clear learning roadmap.
+    
+    ---
+    👥 Team: Phoenix  
+    🎯 Goal: Industry Readiness  
+    """
+)
+
+st.sidebar.markdown("---")
+st.sidebar.caption("Hackathon Prototype | 2026")
+
 
 # -----------------------------
 # Helper Functions
@@ -41,102 +63,127 @@ Basic knowledge of HTML and CSS.
 # -----------------------------
 # UI
 # -----------------------------
-st.title("🔥 Skill Bridge")
-st.caption("Built by Team Phoenix | Skill Gap Translator for Industry Readiness")
-
-mode = st.radio(
-    "Choose Mode",
-    ["SkillBridge (Skill Gap Analysis)", "Career Roadmap (Basic)"]
+st.markdown("## 🔥 Skill Bridge")
+st.markdown(
+    "### Bridging the gap between **student skills** and **industry expectations**"
 )
+st.caption("Built by Team Phoenix")
+st.markdown("---")
+
+
+st.sidebar.title("🔥 Phoenix")
+st.sidebar.subheader("Skill Bridge")
+
+mode = st.sidebar.radio(
+    "Navigation",
+    ["SkillBridge", "Career Roadmap"]
+)
+
+st.sidebar.markdown("---")
+st.sidebar.caption("Hackathon Prototype | Team Phoenix")
+
+
 
 # -----------------------------
 # SKILLBRIDGE MODE
 # -----------------------------
-if mode == "SkillBridge (Skill Gap Analysis)":
+if mode == "SkillBridge":
 
     st.header("🧠 SkillBridge")
 
-    role = st.selectbox(
-        "Select Target Role",
-        list(ROLES_SKILLS.keys())
-    )
-
-    if "resume_text" not in st.session_state:
-        st.session_state.resume_text = ""
-    
-    col1, col2 = st.columns([3, 1])
-
-    with col1:
-        resume_text = st.text_area(
-            "Paste your resume text or skills here",
-            value=st.session_state.resume_text,
-            height=200
+    if st.session_state.step == 1:
+        role = st.selectbox(
+            "Select Target Role",
+            list(ROLES_SKILLS.keys())
         )
-
-    with col2:
-        if st.button("Use Sample Resume"):
-            st.session_state.resume_text = SAMPLE_RESUME
+        if st.button("Next"):
+            st.session_state.role = role
+            st.session_state.step = 2
             st.rerun()
 
 
+    if st.session_state.step == 2:
+
+        if "resume_text" not in st.session_state:
+            st.session_state.resume_text = ""
+
+        col1, col2 = st.columns([3, 1])
+
+        with col1:
+            resume_text = st.text_area(
+                "Paste your resume text or skills here",
+                value=st.session_state.resume_text,
+                height=200
+            )
+
+        with col2:
+            if st.button("Use Sample Resume"):
+                st.session_state.resume_text = SAMPLE_RESUME
+                st.rerun()
+
+        if st.button("Analyze Skill Gap"):
+            st.session_state.step = 3
+            st.rerun()
 
 
-    if st.button("Analyze Skill Gap"):
+    if st.session_state.step == 3:
 
-        role_skills = ROLES_SKILLS[role]
+            role = st.session_state.role
+            role_skills = ROLES_SKILLS[role]
 
-        skill_confidence = extract_skills_with_confidence(
-            resume_text, role_skills
-        )
+            skill_confidence = extract_skills_with_confidence(
+                st.session_state.resume_text, role_skills
+            )
 
-        present_skills = [
-            skill for skill, level in skill_confidence.items()
-            if level in ["Strong", "Basic"]
-        ]
+            present_skills = [
+                skill for skill, level in skill_confidence.items()
+                if level in ["Strong", "Basic"]
+            ]
 
-        missing_skills = [
-            skill for skill, level in skill_confidence.items()
-            if level == "Missing"
-        ]
+            missing_skills = [
+                skill for skill, level in skill_confidence.items()
+                if level == "Missing"
+            ]
 
-        readiness = calculate_readiness(
-            present_skills, len(role_skills)
-        )
+            readiness = calculate_readiness(
+                present_skills, len(role_skills)
+            )
 
-        # --- Skill Analysis ---
-        st.subheader("📌 Skill Analysis")
-        for skill, level in skill_confidence.items():
-            if level == "Strong":
-                st.success(f"{skill.title()} → Strong")
-            elif level == "Basic":
-                st.warning(f"{skill.title()} → Basic")
+            st.subheader("📌 Skill Analysis")
+            for skill, level in skill_confidence.items():
+                if level == "Strong":
+                    st.success(f"{skill.title()} → Strong")
+                elif level == "Basic":
+                    st.warning(f"{skill.title()} → Basic")
+                else:
+                    st.error(f"{skill.title()} → Missing")
+
+            st.subheader("📊 Readiness Level")
+            st.write(f"You are **{readiness}% ready** for the role of **{role}**.")
+
+            st.subheader("🎯 Job Readiness Status")
+            if readiness >= 70:
+                st.success("You are close to being job‑ready for this role.")
+            elif readiness >= 40:
+                st.warning("You are partially ready and need focused upskilling.")
             else:
-                st.error(f"{skill.title()} → Missing")
+                st.error("You are not job‑ready yet. A strong foundation is required.")
 
-        # --- Readiness ---
-        st.subheader("📊 Readiness Level")
-        st.write(f"You are **{readiness}% ready** for the role of **{role}**.")
+            st.subheader("⏳ Estimated Time to Role Readiness")
+            st.write(estimate_time_to_ready(missing_skills))
 
-        # --- Job Ready Status ---
-        st.subheader("🎯 Job Readiness Status")
-        if readiness >= 70:
-            st.success("You are close to being job‑ready for this role.")
-        elif readiness >= 40:
-            st.warning("You are partially ready and need focused upskilling.")
-        else:
-            st.error("You are not job‑ready yet. A strong foundation is required.")
+            st.subheader("🛣 Learning Roadmap (Priority‑Based)")
+            if missing_skills:
+                for i, skill in enumerate(missing_skills, start=1):
+                    st.write(f"🔴 Priority {i}: Learn {skill.title()}")
+            else:
+                st.success("No roadmap needed — you are role‑ready 🎉")
 
-        # --- Time Estimate ---
-        st.subheader("⏳ Estimated Time to Role Readiness")
-        st.write(estimate_time_to_ready(missing_skills))
+            if st.button("Start Over"):
+                st.session_state.step = 1
+                st.session_state.resume_text = ""
+                st.rerun()   
 
-        # --- Roadmap ---
-        st.subheader("🛣 Learning Roadmap (Priority‑Based)")
-        if missing_skills:
-            for i, skill in enumerate(missing_skills, start=1):
-                st.write(f"🔴 Priority {i}: Learn {skill.title()}")
-        else:
-            st.success("No roadmap needed — you are role‑ready 🎉")
 
 # -----------------------------
 # CAREER ROADMAP MODE
@@ -168,3 +215,4 @@ else:
         st.write("- DevOps Engineer")
 
     st.info("You can continue to SkillBridge for detailed skill analysis.")
+    
