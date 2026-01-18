@@ -1,5 +1,6 @@
 import streamlit as st
 from roles_skills import ROLES_SKILLS
+from fpdf import FPDF
 if "step" not in st.session_state:
     st.session_state.step = 1
 
@@ -53,6 +54,35 @@ def calculate_readiness(present, total):
 def estimate_time_to_ready(missing_skills):
     weeks = len(missing_skills) * 2
     return f"{weeks}–{weeks+2} weeks"
+
+def generate_pdf_report(role, readiness, missing_skills):
+    pdf = FPDF()
+    pdf.add_page()
+
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Skill Bridge - Skill Gap Report", ln=True)
+
+    pdf.ln(5)
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 10, f"Target Role: {role}", ln=True)
+    pdf.cell(0, 10, f"Readiness Level: {readiness}%", ln=True)
+
+    pdf.ln(5)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "Learning Roadmap:", ln=True)
+
+    pdf.set_font("Arial", size=12)
+    if missing_skills:
+        for i, skill in enumerate(missing_skills, start=1):
+            pdf.cell(0, 8, f"{i}. Learn {skill.title()}", ln=True)
+    else:
+        pdf.cell(0, 8, "You are role-ready!", ln=True)
+
+    file_path = "SkillBridge_Report.pdf"
+    pdf.output(file_path)
+
+    return file_path
+
 
 SAMPLE_RESUME = """
 I have worked on Python and Excel for data analysis projects.
@@ -127,6 +157,20 @@ if mode == "SkillBridge":
 
 
     if st.session_state.step == 3:
+            # your analysis code (skill_confidence, readiness, missing_skills...)
+            # your UI output (skill analysis, roadmap...)
+
+            # ✅ ADD PDF DOWNLOAD BUTTON HERE (at the END)
+            pdf_path = generate_pdf_report(role, readiness, missing_skills)
+
+            with open(pdf_path, "rb") as file:
+                st.download_button(
+                    label="📄 Download Skill Gap Report (PDF)",
+                    data=file,
+                    file_name="SkillBridge_Report.pdf",
+                    mime="application/pdf"
+                )
+
 
             role = st.session_state.role
             role_skills = ROLES_SKILLS[role]
