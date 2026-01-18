@@ -57,43 +57,90 @@ def estimate_time_to_ready(missing_skills):
     weeks = len(missing_skills) * 2
     return f"{weeks}–{weeks+2} weeks"
 
+def safe_text(text):
+    return (
+        text
+        .replace("–", "-")
+        .replace("—", "-")
+        .replace("‑", "-")
+        .replace("’", "'")
+        .replace("“", '"')
+        .replace("”", '"')
+    )
+
+
 def generate_pdf_report(role, readiness, roadmap):
     pdf = FPDF()
     pdf.add_page()
 
     pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, "Skill Bridge - Skill Gap Report", ln=True)
+    pdf.cell(0, 10, safe_text("Skill Bridge - Skill Gap Report"), ln=True)
 
     pdf.ln(5)
     pdf.set_font("Arial", size=12)
-    pdf.cell(0, 10, f"Target Role: {role}", ln=True)
-    pdf.cell(0, 10, f"Readiness Level: {readiness}%", ln=True)
+    pdf.cell(0, 10, safe_text(f"Target Role: {role}"), ln=True)
+    pdf.cell(0, 10, safe_text(f"Readiness Level: {readiness}%"), ln=True)
+    pdf.cell(
+        0,
+        10,
+        safe_text("Readiness includes self-assessment responses."),
+        ln=True
+    )
 
     pdf.ln(5)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "Learning Roadmap with Resources:", ln=True)
+    pdf.cell(
+        0,
+        10,
+        safe_text("Learning Roadmap with Resources:"),
+        ln=True
+    )
 
     pdf.set_font("Arial", size=11)
 
     if roadmap:
         for i, item in enumerate(roadmap, start=1):
             pdf.ln(3)
-            pdf.multi_cell(0, 8, f"{i}. {item['skill']}")
+            pdf.multi_cell(
+                0,
+                8,
+                safe_text(f"{i}. {item['skill']}")
+            )
 
             if item["resources"]:
-                pdf.multi_cell(0, 8, f"   Course: {item['resources']['course']}")
-                pdf.multi_cell(0, 8, f"   Video: {item['resources']['video']}")
-                pdf.multi_cell(0, 8, f"   Practice: {item['resources']['practice']}")
+                pdf.multi_cell(
+                    0,
+                    8,
+                    safe_text(f"   Course: {item['resources']['course']}")
+                )
+                pdf.multi_cell(
+                    0,
+                    8,
+                    safe_text(f"   Video: {item['resources']['video']}")
+                )
+                pdf.multi_cell(
+                    0,
+                    8,
+                    safe_text(f"   Practice: {item['resources']['practice']}")
+                )
             else:
-                pdf.multi_cell(0, 8, "   No curated resources available.")
+                pdf.multi_cell(
+                    0,
+                    8,
+                    safe_text("   No curated resources available.")
+                )
     else:
-        pdf.multi_cell(0, 8, "You are role‑ready. No roadmap required.")
-
+        pdf.multi_cell(
+            0,
+            8,
+            safe_text("You are role-ready. No roadmap required.")
+        )
 
     file_path = "SkillBridge_Report.pdf"
     pdf.output(file_path)
 
     return file_path
+
 
 
 SAMPLE_RESUME = """
@@ -125,6 +172,13 @@ def build_roadmap_with_resources(missing_skills):
 
     return roadmap
 
+SKILL_QUESTIONS = {
+    "javascript": "Have you built a project using JavaScript?",
+    "react": "Have you built a React application?",
+    "git": "Have you used Git beyond basic commits?",
+    "backend": "Have you worked with backend APIs?",
+    "python": "Have you written Python scripts or projects?"
+}
 
 
 # -----------------------------
@@ -215,6 +269,7 @@ if mode == "SkillBridge":
         readiness = calculate_readiness(
             present_skills, len(role_skills)
         )
+        
 
         # ---------- UI OUTPUT ----------
         st.subheader("📌 Skill Analysis")
@@ -225,6 +280,28 @@ if mode == "SkillBridge":
                 st.warning(f"{skill.title()} → Basic")
             else:
                 st.error(f"{skill.title()} → Missing")
+        st.subheader("🧠 Skill Depth Questions")
+
+        depth_score = 0
+        answered = 0
+
+        for skill in missing_skills + present_skills:
+            for key, question in SKILL_QUESTIONS.items():
+                if key in skill.lower():
+                    answer = st.radio(
+                        question,
+                        ["Never", "With guidance", "Independently"],
+                        key=f"q_{skill}"
+                    )
+
+                    answered += 1
+
+                    if answer == "With guidance":
+                        depth_score += 1
+                    elif answer == "Independently":
+                        depth_score += 2
+        if answered > 0:
+            readiness = min(100, readiness + depth_score)
 
         st.subheader("📊 Readiness Level")
         st.write(f"You are **{readiness}% ready** for the role of **{role}**.")
@@ -302,6 +379,17 @@ else:
         "How do you prefer to learn?",
         ["Videos", "Hands-on practice", "Reading & documentation"]
     )
+    st.subheader("📊 Academic Background (Optional)")
+
+    marks_10 = st.number_input(
+        "10th Grade Percentage (optional)",
+        min_value=0.0, max_value=100.0, step=0.1
+    )
+
+    marks_12 = st.number_input(
+        "12th Grade Percentage (optional)",
+        min_value=0.0, max_value=100.0, step=0.1
+    )
 
     if st.button("Generate Career Roadmap"):
         st.session_state.career_ready = True
@@ -309,6 +397,11 @@ else:
     if st.session_state.get("career_ready"):
 
         st.subheader("🎯 Recommended Career Path")
+        if marks_12 and marks_12 < 50:
+            st.warning(
+                "We recommend starting with fundamentals and hands‑on practice."
+            )
+
 
         if interest == "Web Development":
             st.success("Frontend / Full‑Stack Developer")
