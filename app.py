@@ -157,76 +157,75 @@ if mode == "SkillBridge":
 
 
     if st.session_state.step == 3:
-            # your analysis code (skill_confidence, readiness, missing_skills...)
-            # your UI output (skill analysis, roadmap...)
 
-            # ✅ ADD PDF DOWNLOAD BUTTON HERE (at the END)
-            pdf_path = generate_pdf_report(role, readiness, missing_skills)
+        role = st.session_state.role
+        role_skills = ROLES_SKILLS[role]
 
-            with open(pdf_path, "rb") as file:
-                st.download_button(
-                    label="📄 Download Skill Gap Report (PDF)",
-                    data=file,
-                    file_name="SkillBridge_Report.pdf",
-                    mime="application/pdf"
-                )
+        skill_confidence = extract_skills_with_confidence(
+            st.session_state.resume_text, role_skills
+        )
 
+        present_skills = [
+            skill for skill, level in skill_confidence.items()
+            if level in ["Strong", "Basic"]
+        ]
 
-            role = st.session_state.role
-            role_skills = ROLES_SKILLS[role]
+        missing_skills = [
+            skill for skill, level in skill_confidence.items()
+            if level == "Missing"
+        ]
 
-            skill_confidence = extract_skills_with_confidence(
-                st.session_state.resume_text, role_skills
+        readiness = calculate_readiness(
+            present_skills, len(role_skills)
+        )
+
+        # ---------- UI OUTPUT ----------
+        st.subheader("📌 Skill Analysis")
+        for skill, level in skill_confidence.items():
+            if level == "Strong":
+                st.success(f"{skill.title()} → Strong")
+            elif level == "Basic":
+                st.warning(f"{skill.title()} → Basic")
+            else:
+                st.error(f"{skill.title()} → Missing")
+
+        st.subheader("📊 Readiness Level")
+        st.write(f"You are **{readiness}% ready** for the role of **{role}**.")
+
+        st.subheader("🎯 Job Readiness Status")
+        if readiness >= 70:
+            st.success("You are close to being job‑ready for this role.")
+        elif readiness >= 40:
+            st.warning("You are partially ready and need focused upskilling.")
+        else:
+            st.error("You are not job‑ready yet. A strong foundation is required.")
+
+        st.subheader("⏳ Estimated Time to Role Readiness")
+        st.write(estimate_time_to_ready(missing_skills))
+
+        st.subheader("🛣 Learning Roadmap (Priority‑Based)")
+        if missing_skills:
+            for i, skill in enumerate(missing_skills, start=1):
+                st.write(f"🔴 Priority {i}: Learn {skill.title()}")
+        else:
+            st.success("No roadmap needed — you are role‑ready 🎉")
+
+        # ---------- PDF DOWNLOAD (LAST) ----------
+        pdf_path = generate_pdf_report(role, readiness, missing_skills)
+
+        with open(pdf_path, "rb") as file:
+            st.download_button(
+                label="📄 Download Skill Gap Report (PDF)",
+                data=file,
+                file_name="SkillBridge_Report.pdf",
+                mime="application/pdf"
             )
 
-            present_skills = [
-                skill for skill, level in skill_confidence.items()
-                if level in ["Strong", "Basic"]
-            ]
-
-            missing_skills = [
-                skill for skill, level in skill_confidence.items()
-                if level == "Missing"
-            ]
-
-            readiness = calculate_readiness(
-                present_skills, len(role_skills)
-            )
-
-            st.subheader("📌 Skill Analysis")
-            for skill, level in skill_confidence.items():
-                if level == "Strong":
-                    st.success(f"{skill.title()} → Strong")
-                elif level == "Basic":
-                    st.warning(f"{skill.title()} → Basic")
-                else:
-                    st.error(f"{skill.title()} → Missing")
-
-            st.subheader("📊 Readiness Level")
-            st.write(f"You are **{readiness}% ready** for the role of **{role}**.")
-
-            st.subheader("🎯 Job Readiness Status")
-            if readiness >= 70:
-                st.success("You are close to being job‑ready for this role.")
-            elif readiness >= 40:
-                st.warning("You are partially ready and need focused upskilling.")
-            else:
-                st.error("You are not job‑ready yet. A strong foundation is required.")
-
-            st.subheader("⏳ Estimated Time to Role Readiness")
-            st.write(estimate_time_to_ready(missing_skills))
-
-            st.subheader("🛣 Learning Roadmap (Priority‑Based)")
-            if missing_skills:
-                for i, skill in enumerate(missing_skills, start=1):
-                    st.write(f"🔴 Priority {i}: Learn {skill.title()}")
-            else:
-                st.success("No roadmap needed — you are role‑ready 🎉")
-
-            if st.button("Start Over"):
-                st.session_state.step = 1
-                st.session_state.resume_text = ""
-                st.rerun()   
+        if st.button("Start Over"):
+            st.session_state.step = 1
+            st.session_state.resume_text = ""
+            st.rerun()
+  
 
 
 # -----------------------------
