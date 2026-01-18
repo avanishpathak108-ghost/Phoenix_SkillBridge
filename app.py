@@ -1,6 +1,8 @@
 import streamlit as st
 from roles_skills import ROLES_SKILLS
 from fpdf import FPDF
+from learning_resources import LEARNING_RESOURCES
+
 if "step" not in st.session_state:
     st.session_state.step = 1
 
@@ -55,7 +57,7 @@ def estimate_time_to_ready(missing_skills):
     weeks = len(missing_skills) * 2
     return f"{weeks}–{weeks+2} weeks"
 
-def generate_pdf_report(role, readiness, missing_skills):
+def generate_pdf_report(role, readiness, roadmap):
     pdf = FPDF()
     pdf.add_page()
 
@@ -69,14 +71,24 @@ def generate_pdf_report(role, readiness, missing_skills):
 
     pdf.ln(5)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "Learning Roadmap:", ln=True)
+    pdf.cell(0, 10, "Learning Roadmap with Resources:", ln=True)
 
-    pdf.set_font("Arial", size=12)
-    if missing_skills:
-        for i, skill in enumerate(missing_skills, start=1):
-            pdf.cell(0, 8, f"{i}. Learn {skill.title()}", ln=True)
+    pdf.set_font("Arial", size=11)
+
+    if roadmap:
+        for i, item in enumerate(roadmap, start=1):
+            pdf.ln(3)
+            pdf.multi_cell(0, 8, f"{i}. {item['skill']}")
+
+            if item["resources"]:
+                pdf.multi_cell(0, 8, f"   Course: {item['resources']['course']}")
+                pdf.multi_cell(0, 8, f"   Video: {item['resources']['video']}")
+                pdf.multi_cell(0, 8, f"   Practice: {item['resources']['practice']}")
+            else:
+                pdf.multi_cell(0, 8, "   No curated resources available.")
     else:
-        pdf.cell(0, 8, "You are role-ready!", ln=True)
+        pdf.multi_cell(0, 8, "You are role‑ready. No roadmap required.")
+
 
     file_path = "SkillBridge_Report.pdf"
     pdf.output(file_path)
@@ -89,6 +101,31 @@ I have worked on Python and Excel for data analysis projects.
 Used Pandas for data cleaning and data visualization.
 Basic knowledge of HTML and CSS.
 """
+
+def find_resources_for_skill(skill_text):
+    skill_text = skill_text.lower()
+
+    for key in LEARNING_RESOURCES:
+        if key in skill_text:
+            return LEARNING_RESOURCES[key]
+
+    return None
+
+
+def build_roadmap_with_resources(missing_skills):
+    roadmap = []
+
+    for skill in missing_skills:
+        resources = find_resources_for_skill(skill)
+
+        roadmap.append({
+            "skill": skill.title(),
+            "resources": resources
+        })
+
+    return roadmap
+
+
 
 # -----------------------------
 # UI
@@ -203,15 +240,30 @@ if mode == "SkillBridge":
         st.subheader("⏳ Estimated Time to Role Readiness")
         st.write(estimate_time_to_ready(missing_skills))
 
-        st.subheader("🛣 Learning Roadmap (Priority‑Based)")
-        if missing_skills:
-            for i, skill in enumerate(missing_skills, start=1):
-                st.write(f"🔴 Priority {i}: Learn {skill.title()}")
+        st.subheader("🛣 Learning Roadmap (With Resources)")
+
+        roadmap = build_roadmap_with_resources(missing_skills)
+
+        if roadmap:
+            for i, item in enumerate(roadmap, start=1):
+                st.markdown(f"### 🔴 Priority {i}: {item['skill']}")
+
+                if item["resources"]:
+                    st.markdown(f"- 📘 **Course**: {item['resources']['course']}")
+                    st.markdown(f"- 🎥 **Video**: {item['resources']['video']}")
+                    st.markdown(f"- 🧠 **Practice**: {item['resources']['practice']}")
+                else:
+                    st.markdown("- ⚠️ No curated resources available yet.")
         else:
-            st.success("No roadmap needed — you are role‑ready 🎉")
+            st.success("You are role‑ready 🎉 No learning roadmap required.")
+
+
+        
 
         # ---------- PDF DOWNLOAD (LAST) ----------
-        pdf_path = generate_pdf_report(role, readiness, missing_skills)
+        roadmap = build_roadmap_with_resources(missing_skills)
+        pdf_path = generate_pdf_report(role, readiness, roadmap)
+
 
         with open(pdf_path, "rb") as file:
             st.download_button(
@@ -234,28 +286,71 @@ if mode == "SkillBridge":
 else:
     st.header("🧭 Career Roadmap")
 
+    st.subheader("🧠 Quick Career Discovery")
+
     interest = st.selectbox(
-        "What are you most interested in?",
-        ["Data", "Web Development", "Security", "Design", "Cloud"]
+        "Which area excites you the most?",
+        ["Web Development", "Data", "Security", "Design", "Cloud"]
     )
 
-    st.subheader("Suggested Career Options")
+    experience = st.radio(
+        "Your current experience level?",
+        ["Beginner", "Some experience", "Worked on projects"]
+    )
 
-    if interest == "Data":
-        st.write("- Data Analyst")
-        st.write("- Business Analyst")
-    elif interest == "Web Development":
-        st.write("- Web Developer")
-        st.write("- Frontend Engineer")
-    elif interest == "Security":
-        st.write("- Cybersecurity Analyst")
-        st.write("- SOC Analyst")
-    elif interest == "Design":
-        st.write("- UI/UX Designer")
-        st.write("- Product Designer")
+    learning_style = st.radio(
+        "How do you prefer to learn?",
+        ["Videos", "Hands-on practice", "Reading & documentation"]
+    )
+
+    if st.button("Generate Career Roadmap"):
+        st.session_state.career_ready = True
+
+    if st.session_state.get("career_ready"):
+
+        st.subheader("🎯 Recommended Career Path")
+
+        if interest == "Web Development":
+            st.success("Frontend / Full‑Stack Developer")
+            st.write("Focus on: HTML, CSS, JavaScript, React, Git")
+
+        elif interest == "Data":
+            st.success("Data Analyst")
+            st.write("Focus on: Python, SQL, Excel, Data Visualization")
+
+        elif interest == "Security":
+            st.success("Cybersecurity Analyst")
+            st.write("Focus on: Networking, Linux, Security Basics")
+
+        elif interest == "Design":
+            st.success("UI/UX Designer")
+            st.write("Focus on: Figma, User Research, Design Systems")
+
+        elif interest == "Cloud":
+            st.success("Cloud / DevOps Engineer")
+            st.write("Focus on: Linux, AWS, Docker, CI/CD")
+
+        st.info(
+            "This roadmap is personalized based on your interests and experience level."
+        )
+    st.subheader("📚 Suggested Learning Resources")
+
+    skills = []
+
+    if interest == "Web Development":
+        skills = ["html", "css", "javascript", "react", "git"]
+
+    elif interest == "Data":
+        skills = ["python", "sql", "excel"]
+
     elif interest == "Cloud":
-        st.write("- Cloud Engineer")
-        st.write("- DevOps Engineer")
+        skills = ["linux", "docker"]
 
-    st.info("You can continue to SkillBridge for detailed skill analysis.")
-    
+    for skill in skills:
+        resources = LEARNING_RESOURCES.get(skill)
+        if resources:
+            st.markdown(f"### 🔹 {skill.title()}")
+            st.markdown(f"- 📘 Course: {resources['course']}")
+            st.markdown(f"- 🎥 Video: {resources['video']}")
+            st.markdown(f"- 🧠 Practice: {resources['practice']}")
+
