@@ -80,21 +80,11 @@ def generate_pdf_report(role, readiness, roadmap):
     pdf.set_font("Arial", size=12)
     pdf.cell(0, 10, safe_text(f"Target Role: {role}"), ln=True)
     pdf.cell(0, 10, safe_text(f"Readiness Level: {readiness}%"), ln=True)
-    pdf.cell(
-        0,
-        10,
-        safe_text("Readiness includes self-assessment responses."),
-        ln=True
-    )
+    pdf.cell(0,10,safe_text("Readiness includes self-assessment responses."),ln=True)
 
     pdf.ln(5)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(
-        0,
-        10,
-        safe_text("Learning Roadmap with Resources:"),
-        ln=True
-    )
+    pdf.cell(0,10,safe_text("Learning Roadmap with Resources:"),ln=True)
 
     pdf.set_font("Arial", size=11)
 
@@ -426,6 +416,29 @@ else:
         st.info(
             "This roadmap is personalized based on your interests and experience level."
         )
+
+        st.subheader("🗺️ Official Roadmap.sh Links")
+
+        if interest == "Web Development":
+            st.markdown("🔗 Frontend Developer: https://roadmap.sh/frontend")
+            st.markdown("🔗 Backend Developer: https://roadmap.sh/backend")
+            st.markdown("🔗 Full Stack Developer: https://roadmap.sh/full-stack")
+
+        elif interest == "Data":
+            st.markdown("🔗 Data Analyst: https://roadmap.sh/data-analyst")
+            st.markdown("🔗 Data Scientist: https://roadmap.sh/data-scientist")
+            st.markdown("🔗 AI / ML Engineer: https://roadmap.sh/ai-data-scientist")
+
+        elif interest == "Security":
+            st.markdown("🔗 Cyber Security: https://roadmap.sh/cyber-security")
+
+        elif interest == "Design":
+            st.markdown("🔗 UX Design: https://roadmap.sh/ux-design")
+
+        elif interest == "Cloud":
+            st.markdown("🔗 DevOps: https://roadmap.sh/devops")
+            st.markdown("🔗 AWS: https://roadmap.sh/aws")
+
     st.subheader("📚 Suggested Learning Resources")
 
     skills = []
