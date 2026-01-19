@@ -2,6 +2,9 @@ import streamlit as st
 from roles_skills import ROLES_SKILLS
 from fpdf import FPDF
 from learning_resources import LEARNING_RESOURCES
+import io
+from PyPDF2 import PdfReader
+import docx
 
 if "step" not in st.session_state:
     st.session_state.step = 1
@@ -46,6 +49,72 @@ def extract_skills_with_confidence(text, role_skills):
 
     return skill_confidence
 
+def resume_review_suggestions(resume_text):
+    text = resume_text.lower()
+
+    suggestions = []
+
+    # Missing Sections Checks
+    if "project" not in text:
+        suggestions.append("📌 Add a **Projects** section (2–3 strong projects with tech stack + outcomes).")
+
+    if "intern" not in text and "experience" not in text:
+        suggestions.append("📌 Add **Internship / Experience** section (even if it's self-projects / freelancing).")
+
+    if "education" not in text and "school" not in text and "college" not in text:
+        suggestions.append("📌 Add an **Education** section (Degree + Year + College).")
+
+    if "skill" not in text and "tools" not in text and "technologies" not in text:
+        suggestions.append("📌 Add a **Skills / Tools** section (Python, SQL, Git, etc.).")
+
+    if "linkedin" not in text:
+        suggestions.append("📌 Add your **LinkedIn profile link** in the header.")
+
+    if "github" not in text:
+        suggestions.append("📌 Add your **GitHub profile link** (very important for tech roles).")
+
+    # Generic Resume Improvements
+    suggestions.append("✅ Use **bullet points** instead of paragraphs.")
+    suggestions.append("✅ Add **numbers/impact** (example: improved accuracy by 15%, built dashboard for 200 users).")
+    suggestions.append("✅ Keep resume **1 page** (if fresher).")
+    suggestions.append("✅ Use strong action words: Built, Designed, Implemented, Automated, Optimized.")
+
+    return suggestions
+
+def calculate_ats_score(resume_text, role_skills=None):
+    text = resume_text.lower()
+    score = 0
+
+    # ✅ Basic sections (40 points)
+    sections = {
+        "projects": 10,
+        "experience": 10,
+        "education": 5,
+        "skills": 10,
+        "certification": 5
+    }
+
+    for sec, pts in sections.items():
+        if sec in text:
+            score += pts
+
+    # ✅ Links (10 points)
+    if "linkedin" in text:
+        score += 5
+    if "github" in text:
+        score += 5
+
+    # ✅ Role skill keywords match (50 points)
+    if role_skills:
+        matched = 0
+        for skill in role_skills:
+            if skill.lower() in text:
+                matched += 1
+
+        if len(role_skills) > 0:
+            score += int((matched / len(role_skills)) * 50)
+
+    return min(100, score)
 
 def calculate_readiness(present, total):
     if total == 0:
@@ -130,6 +199,33 @@ def generate_pdf_report(role, readiness, roadmap):
     pdf.output(file_path)
 
     return file_path
+
+def extract_text_from_uploaded_file(uploaded_file):
+    if uploaded_file is None:
+        return ""
+
+    file_name = uploaded_file.name.lower()
+
+    # TXT
+    if file_name.endswith(".txt"):
+        return uploaded_file.read().decode("utf-8", errors="ignore")
+
+    # PDF
+    if file_name.endswith(".pdf"):
+        pdf_reader = PdfReader(uploaded_file)
+        text = ""
+        for page in pdf_reader.pages:
+            text += (page.extract_text() or "") + "\n"
+        return text
+
+    # DOCX
+    if file_name.endswith(".docx"):
+        doc = docx.Document(uploaded_file)
+        text = "\n".join([p.text for p in doc.paragraphs])
+        return text
+
+    return ""
+
 
 
 
@@ -218,6 +314,33 @@ if mode == "SkillBridge":
         if "resume_text" not in st.session_state:
             st.session_state.resume_text = ""
 
+        # ✅ Upload Resume File (PDF/DOCX/TXT)
+        st.subheader("📄 Upload Resume File (PDF / DOCX / TXT)")
+
+        uploaded_file = st.file_uploader(
+            "Upload your resume",
+            type=["pdf", "docx", "txt"]
+        )
+
+        if uploaded_file is not None:
+            extracted_text = extract_text_from_uploaded_file(uploaded_file)
+
+            if extracted_text.strip():
+                st.session_state.resume_text = extracted_text
+                st.success("✅ Resume extracted successfully! Now click Analyze Skill Gap.")
+
+                # ✅ Resume Review Section
+                st.subheader("📝 Resume Review + Suggestions")
+
+                tips = resume_review_suggestions(st.session_state.resume_text)
+
+                for tip in tips:
+                    st.write("•", tip)
+
+            else:
+                st.error("❌ Could not extract text from this file. Try another file or paste text manually.")
+
+        # ✅ Text Area (auto filled if file uploaded)
         col1, col2 = st.columns([3, 1])
 
         with col1:
@@ -226,6 +349,7 @@ if mode == "SkillBridge":
                 value=st.session_state.resume_text,
                 height=200
             )
+            st.session_state.resume_text = resume_text
 
         with col2:
             if st.button("Use Sample Resume"):
@@ -235,7 +359,6 @@ if mode == "SkillBridge":
         if st.button("Analyze Skill Gap"):
             st.session_state.step = 3
             st.rerun()
-
 
     if st.session_state.step == 3:
 
@@ -259,6 +382,22 @@ if mode == "SkillBridge":
         readiness = calculate_readiness(
             present_skills, len(role_skills)
         )
+
+        # ✅ ATS Score
+        st.subheader("📄 ATS Resume Score")
+
+        ats_score = calculate_ats_score(st.session_state.resume_text, role_skills)
+
+        st.progress(ats_score / 100)
+        st.write(f"✅ Your ATS Score is: **{ats_score}/100**")
+
+        if ats_score >= 80:
+            st.success("Great! Your resume is ATS-friendly.")
+        elif ats_score >= 50:
+            st.warning("Good, but you can improve keywords + sections.")
+        else:
+            st.error("Low ATS score. Add missing sections + role keywords.")
+
         
 
         # ---------- UI OUTPUT ----------
