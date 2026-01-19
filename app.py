@@ -266,6 +266,46 @@ SKILL_QUESTIONS = {
     "python": "Have you written Python scripts or projects?"
 }
 
+ROADMAP_SH_LINKS = {
+    "Web Development": [
+        ("Frontend Developer", "https://roadmap.sh/frontend"),
+        ("Backend Developer", "https://roadmap.sh/backend"),
+        ("Full Stack Developer", "https://roadmap.sh/full-stack"),
+        ("JavaScript", "https://roadmap.sh/javascript"),
+        ("React", "https://roadmap.sh/react"),
+        ("Node.js", "https://roadmap.sh/nodejs"),
+        ("Angular", "https://roadmap.sh/angular"),
+        ("Vue", "https://roadmap.sh/vue"),
+        ("TypeScript", "https://roadmap.sh/typescript"),
+        ("System Design", "https://roadmap.sh/system-design"),
+        ("API Design", "https://roadmap.sh/api-design"),
+    ],
+
+    "Data": [
+        ("Data Analyst", "https://roadmap.sh/data-analyst"),
+        ("Data Scientist", "https://roadmap.sh/data-scientist"),
+        ("AI & Data Scientist", "https://roadmap.sh/ai-data-scientist"),
+        ("SQL", "https://roadmap.sh/sql"),
+        ("Python", "https://roadmap.sh/python"),
+    ],
+
+    "Security": [
+        ("Cyber Security", "https://roadmap.sh/cyber-security"),
+        ("DevSecOps", "https://roadmap.sh/devsecops"),
+    ],
+
+    "Design": [
+        ("UX Design", "https://roadmap.sh/ux-design"),
+        ("Product Designer", "https://roadmap.sh/product-designer"),
+    ],
+
+    "Cloud": [
+        ("DevOps", "https://roadmap.sh/devops"),
+        ("AWS", "https://roadmap.sh/aws"),
+        ("Docker", "https://roadmap.sh/docker"),
+        ("Kubernetes", "https://roadmap.sh/kubernetes"),
+    ],
+}
 
 # -----------------------------
 # UI
@@ -531,6 +571,29 @@ else:
                 "We recommend starting with fundamentals and hands‑on practice."
             )
 
+        st.subheader("🗺️ Roadmap.sh (Complete Paths)")
+        sub_interests = ROADMAP_SH_LINKS.get(interest, [])
+
+        if sub_interests:
+            selected_role = st.selectbox(
+                "Choose a roadmap path you want to follow 👇",
+                [name for name, link in sub_interests]
+            )
+
+            # find selected link
+            selected_link = ""
+            for name, link in sub_interests:
+                if name == selected_role:
+                    selected_link = link
+                    break
+
+            st.success(f"✅ Selected Path: {selected_role}")
+            st.markdown(f"🔗 Roadmap Link: {selected_link}")
+            st.info("Open this link and follow the steps in order. You can also use SkillBridge to check your gaps.")
+
+        else:
+            st.warning("No roadmap links found for this category yet.")
+
 
         if interest == "Web Development":
             st.success("Frontend / Full‑Stack Developer")
@@ -555,28 +618,6 @@ else:
         st.info(
             "This roadmap is personalized based on your interests and experience level."
         )
-
-        st.subheader("🗺️ Official Roadmap.sh Links")
-
-        if interest == "Web Development":
-            st.markdown("🔗 Frontend Developer: https://roadmap.sh/frontend")
-            st.markdown("🔗 Backend Developer: https://roadmap.sh/backend")
-            st.markdown("🔗 Full Stack Developer: https://roadmap.sh/full-stack")
-
-        elif interest == "Data":
-            st.markdown("🔗 Data Analyst: https://roadmap.sh/data-analyst")
-            st.markdown("🔗 Data Scientist: https://roadmap.sh/data-scientist")
-            st.markdown("🔗 AI / ML Engineer: https://roadmap.sh/ai-data-scientist")
-
-        elif interest == "Security":
-            st.markdown("🔗 Cyber Security: https://roadmap.sh/cyber-security")
-
-        elif interest == "Design":
-            st.markdown("🔗 UX Design: https://roadmap.sh/ux-design")
-
-        elif interest == "Cloud":
-            st.markdown("🔗 DevOps: https://roadmap.sh/devops")
-            st.markdown("🔗 AWS: https://roadmap.sh/aws")
 
     st.subheader("📚 Suggested Learning Resources")
 
